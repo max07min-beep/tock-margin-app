@@ -11,7 +11,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">Yahoo!ファイナンス等のペーストデータを確実パース・自動解析</p>
+                <p class="text-sm text-slate-500 mt-1">確実解析バージョン</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
@@ -20,22 +20,25 @@
 
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
             <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
-            <p class="text-xs text-slate-500 mb-4">対象銘柄を入力し、ペーストエリアにそのまま貼り付けて「解析する」を押してください。</p>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">銘柄コード</label>
-                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">銘柄名</label>
-                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
                 </div>
             </div>
 
             <div class="mb-4">
-                <label class="block text-xs font-bold text-slate-600 mb-1">表データの貼り付け</label>
-                <textarea id="paste-area" rows="6" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs font-bold text-slate-600">表データの貼り付け</label>
+                    <!-- 動作確認用のテストデータ自動入力ボタン -->
+                    <button onclick="insertTestData()" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
+                </div>
+                <textarea id="paste-area" rows="6" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none"></textarea>
             </div>
 
             <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
@@ -54,7 +57,7 @@
                             <th class="p-4">コード</th>
                             <th class="p-4">銘柄名</th>
                             <th class="p-4">最新信用倍率</th>
-                            <th class="p-4">買残トレンド（シコリ掃除状況）</th>
+                            <th class="p-4">買残トレンド</th>
                             <th class="p-4">スコア</th>
                             <th class="p-4">判定シグナル</th>
                         </tr>
@@ -68,6 +71,13 @@
 
     <script>
         let analyzedStocks = JSON.parse(localStorage.getItem('analyzedStocks')) || [];
+
+        // テストデータをテキストエリアに流し込む関数
+        function insertTestData() {
+            const sample = `2026/10/232,154,400\n12,023,300\n-10,300\n-1,825,800\n5.58\n2026/10/162,164,700\n13,849,100\n515,500\n-4,494,500\n6.40\n2026/10/91,649,200\n18,343,600\n-800\n-1,573,100\n11.12\n2026/7/32,171,500\n22,198,100\n-162,000\n-1,555,400\n10.22`;
+            document.getElementById('paste-area').value = sample;
+            alert("テストデータを入力しました。「データを解析して反映する」を押してみてください。");
+        }
 
         function renderTable() {
             const tbody = document.getElementById('stock-table-body');
@@ -110,62 +120,81 @@
                 return;
             }
 
-            // テキスト全体からすべての「日付（YYYY/M/D または YYYY/MM/DD）」を順番に抽出
-            const dateRegex = /\d{4}\/\d{1,2}\/\d{1,2}/g;
-            const dates = rawText.match(dateRegex);
+            // よりシンプルで確実に数値を拾う正規表現パース
+            // 行ごとに分解して、数字やスラッシュ、カンマ、マイナスを抽出する
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            let ratios = [];
+            let buyMargins = [];
 
-            if (!dates || dates.length === 0) {
-                alert("有効な日付が見つかりませんでした。データ形式を確認してください。");
-                return;
-            }
-
-            // 日付文字列をすべてスペースに置換して、残った数値を純粋に抽出
-            let textWithoutDates = rawText;
-            dates.forEach(d => {
-                textWithoutDates = textWithoutDates.replace(d, ' ');
+            lines.forEach(line => {
+                // 行の中に「小数点の数字（例: 5.58）」があればそれは信用倍率の可能性が高い
+                const ratioMatch = line.match(/\b\d+\.\d{2}\b/);
+                if (ratioMatch) {
+                    ratios.push(parseFloat(ratioMatch[0]));
+                }
+                // 7桁以上の大きな数字（例: 12,023,300）があれば買残の可能性が高い
+                const numMatch = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
+                if (numMatch) {
+                    const val = parseInt(numMatch[0].replace(/,/g, ''), 10);
+                    // 10万〜1億の範囲なら買残・売残とみなす
+                    if (val > 100000 && val < 100000000) {
+                        buyMargins.push(val);
+                    }
+                }
             });
 
-            // カンマ区切りの数値やマイナス数値、小数点をすべて配列として取得
-            const allTokens = textWithoutDates.match(/[-+]?[\d,]+\.?\d*/g);
-            
-            if (!allTokens) {
-                alert("数値データの抽出に失敗しました。");
+            if (ratios.length === 0) {
+                alert("信用倍率の数値が見つかりませんでした。データ形式を確認してください。");
                 return;
             }
 
-            const cleanNumbers = allTokens
-                .map(t => t.replace(/,/g, ''))
-                .filter(t => t !== '' && !isNaN(t))
-                .map(Number);
-
-            // 1レコードあたり5つの数値（売残, 買残, 売残増減, 買残増減, 信用倍率）があると仮定して組み立て
-            let records = [];
-            let numIdx = 0;
-
-            for (let i = 0; i < dates.length; i++) {
-                if (numIdx + 4 < cleanNumbers.length) {
-                    records.push({
-                        date: dates[i],
-                        sellMargin: cleanNumbers[numIdx],
-                        buyMargin: cleanNumbers[numIdx + 1],
-                        sellChange: cleanNumbers[numIdx + 2],
-                        buyChange: cleanNumbers[numIdx + 3],
-                        ratio: cleanNumbers[numIdx + 4]
-                    });
-                    numIdx += 5;
+            // 最新の倍率は配列の最初の数値
+            const latestRatio = ratios[0];
+            
+            // トレンド判定（最初と最後の買残を比較）
+            let trendText = "推移安定";
+            if (buyMargins.length >= 2) {
+                const latestBuy = buyMargins[0];
+                const oldestBuy = buyMargins[buyMargins.length - 1];
+                if (latestBuy < oldestBuy) {
+                    const diff = Math.round(((oldestBuy - latestBuy) / oldestBuy) * 100);
+                    trendText = `買残が約${diff}%減少（シコリ掃除良好）`;
+                } else {
+                    trendText = "買残が増加傾向";
                 }
             }
 
-            if (records.length === 0) {
-                alert("データを表として正しく構築できませんでした。");
-                return;
+            // スコアリング
+            let score = Math.max(0, Math.min(100, Math.round(100 - (latestRatio * 5))));
+            if (trendText.includes("シコリ掃除良好")) {
+                score = Math.min(100, score + 20);
             }
 
-            // 最新レコード（先頭）
-            const latest = records[0];
-            const latestRatio = latest.ratio;
+            let signal = (latestRatio < 6.0 && score >= 70) ? "ロング推奨" : "下落警戒・様子見";
 
-            // 買残トレンド計算（ピーク時との比較）
-            let trendText = "推移安定";
-            let maxBuy = 0;
-            records.forEach(r => { if (r.buyMargin > maxBuy
+            const existingIndex = analyzedStocks.findIndex(s => s.code === code);
+            const newStockData = {
+                code: code,
+                name: name,
+                marginRatio: latestRatio,
+                trend: trendText,
+                score: score,
+                signal: signal
+            };
+
+            if (existingIndex >= 0) {
+                analyzedStocks[existingIndex] = newStockData;
+            } else {
+                analyzedStocks.push(newStockData);
+            }
+
+            localStorage.setItem('analyzedStocks', JSON.stringify(analyzedStocks));
+            renderTable();
+            alert(`解析成功！\n・最新倍率: ${latestRatio}倍\n・スコア: ${score}点 (${signal})`);
+        }
+
+        renderTable();
+    </script>
+</body>
+</html>
