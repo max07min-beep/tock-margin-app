@@ -6,7 +6,7 @@
     <title>信用需給分析ダッシュボード</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for graphs -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
@@ -14,7 +14,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">ペーストデータ自動解析 ＆ トレンドグラフ表示</p>
+                <p class="text-sm text-slate-500 mt-1">ペーストデータ自動解析 ＆ グラフ表示（安定版）</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
@@ -38,4 +38,85 @@
 
             <div class="mb-4">
                 <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs
+                    <label class="text-xs font-bold text-slate-600">表データの貼り付け</label>
+                    <button onclick="insertTestData()" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
+                </div>
+                <textarea id="paste-area" rows="5" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none border-slate-300 focus:border-blue-500"></textarea>
+            </div>
+
+            <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
+                データを解析してグラフ化する
+            </button>
+        </section>
+
+        <!-- グラフ表示エリア -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">📊 信用倍率 ＆ 買残の推移グラフ</h2>
+            <div class="w-full h-72 md:h-96">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 分析結果一覧テーブル -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800">📋 監視銘柄 分析サマリー</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                            <th class="p-4">コード</th>
+                            <th class="p-4">銘柄名</th>
+                            <th class="p-4">最新信用倍率</th>
+                            <th class="p-4">買残トレンド</th>
+                            <th class="p-4">スコア</th>
+                            <th class="p-4">判定シグナル</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // データ読み込み時のエラー防止（もし古いデータで壊れていたら空にする）
+        let analyzedStocks = [];
+        try {
+            analyzedStocks = JSON.parse(localStorage.getItem('analyzedStocks')) || [];
+        } catch (e) {
+            analyzedStocks = [];
+        }
+        
+        let myChart = null;
+
+        function insertTestData() {
+            const sample = `2026/10/232,154,400\n12,023,300\n-10,300\n-1,825,800\n5.58\n2026/10/162,164,700\n13,849,100\n515,500\n-4,494,500\n6.40\n2026/10/91,649,200\n18,343,600\n-800\n-1,573,100\n11.12\n2026/7/32,171,500\n22,198,100\n-162,000\n-1,555,400\n10.22`;
+            document.getElementById('paste-area').value = sample;
+            alert("テストデータを入力しました。");
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('stock-table-body');
+            tbody.innerHTML = '';
+            
+            if (!Array.isArray(analyzedStocks) || analyzedStocks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
+                return;
+            }
+
+            analyzedStocks.forEach((stock, index) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50/50 transition cursor-pointer";
+                row.onclick = () => drawChart(stock);
+                
+                let signalBadge = stock.signal === "ロング推奨" 
+                    ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
+                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
+
+                row.innerHTML = `
+                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code || ''}</td>
+                    <td class="p-4 font-bold text-slate-900">${stock.name || ''}</td>
+                    <td class="p-4 font-mono font-bold text
