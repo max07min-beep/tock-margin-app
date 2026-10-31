@@ -1,0 +1,32 @@
+{
+  "updatedAt": "2026-10-31",
+  "stocks": [
+    {
+      "code": "7203",
+      "name": "トヨタ自動車",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
+    },
+    {
+      "code": "6758",
+      "name": "ソニーグループ",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
+    },
+    {
+      "code": "9984",
+      "name": "ソフトバンクグループ",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
+    }
+  ]
+}
