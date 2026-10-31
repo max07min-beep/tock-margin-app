@@ -2,74 +2,66 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>株価・信用需給 分析スクリーニングアプリ</title>
-    <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background: #f4f6f9; color: #333; }
-        h1 { font-size: 22px; color: #111; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #f8f9fa; }
-        .badge-long { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .badge-alert { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .update-time { font-size: 12px; color: #666; margin-top: 10px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信用需給分析ダッシュボード</title>
+    <!-- Tailwind CSS for modern clean styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- ヘッダー -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
+                <p class="text-sm text-slate-500 mt-1">Yahoo!等のデータをペーストして、トレンド・シコリの掃除度合いを自動解析</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-right">
+                <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
+            </div>
+        </header>
 
-    <h1>株価・信用需給 分析スクリーニングアプリ</h1>
-    
-    <div class="card">
-        <h3>監視銘柄 需給判定一覧</h3>
-        <p style="font-size: 14px; color: #555;">毎週火曜日のデータに基づき、動画のロジックで自動判定しています。</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>コード</th>
-                    <th>銘柄名</th>
-                    <th>信用倍率</th>
-                    <th>判定シグナル</th>
-                    <th>スコア</th>
-                </tr>
-            </thead>
-            <tbody id="stock-table-body">
-                <tr><td colspan="5" style="text-align: center;">データを読み込み中...</td></tr>
-            </tbody>
-        </table>
-        <div class="update-time" id="update-time"></div>
-    </div>
+        <!-- データペースト入力エリア -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
+            <p class="text-xs text-slate-500 mb-4">対象銘柄のコード（例: 7203）を入力し、Yahoo!ファイナンス等の履歴表をそのまま下の枠に貼り付けて「解析する」を押してください。</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">銘柄コード</label>
+                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">銘柄名</label>
+                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
 
-    <script>
-        async function loadData() {
-            try {
-                const response = await fetch('data.json');
-                const data = await response.json();
-                
-                document.getElementById('update-time').innerText = "データ最終更新日: " + data.updatedAt;
-                
-                const tbody = document.getElementById('stock-table-body');
-                tbody.innerHTML = '';
-                
-                data.stocks.forEach(stock => {
-                    const tr = document.createElement('tr');
-                    const badgeClass = stock.signal === 'ロング推奨' ? 'badge-long' : 'badge-alert';
-                    
-                    tr.innerHTML = `
-                        <td><strong>${stock.code}</strong></td>
-                        <td>${stock.name}</td>
-                        <td>${stock.marginRatio}倍</td>
-                        <td><span class="${badgeClass}">${stock.signal}</span></td>
-                        <td>${stock.score}点</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (error) {
-                console.error("データの読み込みに失敗しました:", error);
-                document.getElementById('stock-table-body').innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">データが見つかりません。「Actions」から手動実行してください。</td></tr>`;
-            }
-        }
-        
-        loadData();
-    </script>
-</body>
-</html>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-600 mb-1">表データの貼り付け（コピーしたテーブルをそのままここにペースト）</label>
+                <textarea id="paste-area" rows="5" placeholder="例: 2026/10/23  2,154,400  12,023,300  ...  5.58" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+            </div>
+
+            <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
+                データを解析して反映する
+            </button>
+        </section>
+
+        <!-- 分析結果一覧テーブル -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800">📊 監視銘柄 分析サマリー</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                            <th class="p-4">コード</th>
+                            <th class="p-4">銘柄名</th>
+                            <th class="p-4">最新信用倍率</th>
+                            <th class="p-4">買残トレンド（直近の変化）</th>
+                            <th class="p-4">スコア</th>
+                            <th class="p-4">判定シグナル</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
+                        <!-- 動的に挿入されます -->
