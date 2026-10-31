@@ -27,6 +27,42 @@
       "marginRatio": 2.0,
       "score": 80,
       "signal": "ロング推奨"
+    },
+    {
+      "code": "6920",
+      "name": "レーザーテック",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
+    },
+    {
+      "code": "8035",
+      "name": "東京エレクトロン",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
+    },
+    {
+      "code": "6857",
+      "name": "アドバンテスト",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
+    },
+    {
+      "code": "6146",
+      "name": "ディスコ",
+      "buyMargin": 1000000,
+      "sellMargin": 500000,
+      "marginRatio": 2.0,
+      "score": 80,
+      "signal": "ロング推奨"
     }
   ]
 }
