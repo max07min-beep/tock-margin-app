@@ -4,187 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>信用需給分析ダッシュボード</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">実データ完全対応・最強パース版</p>
+                <p class="text-sm text-slate-500 mt-1">ペーストデータ自動解析 ＆ トレンドグラフ表示</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
             </div>
         </header>
 
+        <!-- データペースト入力エリア -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
             <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">銘柄コード</label>
-                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">銘柄名</label>
-                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
                 </div>
             </div>
 
             <div class="mb-4">
                 <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-bold text-slate-600">表データの貼り付け</label>
-                    <button onclick="insertTestData()" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
-                </div>
-                <textarea id="paste-area" rows="6" placeholder="ここに実際のYahoo!ファイナンス等の表をペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none"></textarea>
-            </div>
-
-            <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
-                データを解析して反映する
-            </button>
-        </section>
-
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-6 border-b border-slate-100">
-                <h2 class="text-lg font-bold text-slate-800">📊 監視銘柄 分析サマリー</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
-                            <th class="p-4">コード</th>
-                            <th class="p-4">銘柄名</th>
-                            <th class="p-4">最新信用倍率</th>
-                            <th class="p-4">買残トレンド</th>
-                            <th class="p-4">スコア</th>
-                            <th class="p-4">判定シグナル</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </div>
-
-    <script>
-        let analyzedStocks = JSON.parse(localStorage.getItem('analyzedStocks')) || [];
-
-        function insertTestData() {
-            const sample = `2026/10/232,154,400\n12,023,300\n-10,300\n-1,825,800\n5.58\n2026/10/162,164,700\n13,849,100\n515,500\n-4,494,500\n6.40\n2026/10/91,649,200\n18,343,600\n-800\n-1,573,100\n11.12\n2026/7/32,171,500\n22,198,100\n-162,000\n-1,555,400\n10.22`;
-            document.getElementById('paste-area').value = sample;
-            alert("テストデータを入力しました。");
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('stock-table-body');
-            tbody.innerHTML = '';
-            
-            if (analyzedStocks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
-                return;
-            }
-
-            analyzedStocks.forEach(stock => {
-                const row = document.createElement('tr');
-                row.className = "hover:bg-slate-50/50 transition";
-                
-                let signalBadge = stock.signal === "ロング推奨" 
-                    ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
-                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
-
-                row.innerHTML = `
-                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code}</td>
-                    <td class="p-4 font-bold text-slate-900">${stock.name}</td>
-                    <td class="p-4 font-mono font-bold text-blue-600">${stock.marginRatio} 倍</td>
-                    <td class="p-4 text-xs text-slate-600">${stock.trend}</td>
-                    <td class="p-4 font-bold font-mono">${stock.score} 点</td>
-                    <td class="p-4">${signalBadge}</td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            document.getElementById('update-date').innerText = "最終更新: " + new Date().toLocaleDateString();
-        }
-
-        function parseAndAnalyze() {
-            const code = document.getElementById('target-code').value.trim();
-            const name = document.getElementById('target-name').value.trim();
-            const rawText = document.getElementById('paste-area').value.trim();
-
-            if (!rawText) {
-                alert("データを貼り付けてください。");
-                return;
-            }
-
-            // テキスト中から「小数点のついた数値（例: 5.58, 12.07 等の信用倍率候補）」をすべて自動で拾う
-            const ratioMatches = rawText.match(/\b\d+\.\d{1,2}\b/g);
-            // テキスト中から「7桁〜8桁の大きな数字（例: 12,023,300等の買残候補）」をすべて拾う
-            const numMatches = rawText.match(/[\d,]{7,}/g);
-
-            if (!ratioMatches || ratioMatches.length === 0) {
-                alert("信用倍率の数値が見つかりませんでした。ペースト内容を確認してください。");
-                return;
-            }
-
-            // 一番最初に見つかる小数が「最新の信用倍率」
-            const latestRatio = parseFloat(ratioMatches[0]);
-
-            // 買残の数値を綺麗に配列化
-            let buyMargins = [];
-            if (numMatches) {
-                buyMargins = numMatches
-                    .map(n => parseInt(n.replace(/,/g, ''), 10))
-                    .filter(val => val > 1000000 && val < 100000000); // 100万〜1億株の範囲を抽出
-            }
-
-            // トレンド（シコリの掃除具合）の自動判定
-            let trendText = "推移安定";
-            if (buyMargins.length >= 2) {
-                const latestBuy = buyMargins[0]; // 最初に出てきた大きな数字（最新）
-                // 一番大きい数値（ピーク時）を探す
-                const maxBuy = Math.max(...buyMargins);
-
-                if (maxBuy > latestBuy) {
-                    const reducedPct = Math.round(((maxBuy - latestBuy) / maxBuy) * 100);
-                    trendText = `買残がピークから約${reducedPct}%減少（シコリ掃除良好）`;
-                } else {
-                    trendText = "買残が増加傾向（注意）";
-                }
-            }
-
-            // スコアリング
-            let score = Math.max(0, Math.min(100, Math.round(100 - (latestRatio * 5))));
-            if (trendText.includes("シコリ掃除良好")) {
-                score = Math.min(100, score + 20);
-            }
-
-            let signal = (latestRatio < 6.0 && score >= 70) ? "ロング推奨" : "下落警戒・様子見";
-
-            // 保存・更新
-            const existingIndex = analyzedStocks.findIndex(s => s.code === code);
-            const newStockData = {
-                code: code,
-                name: name,
-                marginRatio: latestRatio,
-                trend: trendText,
-                score: score,
-                signal: signal
-            };
-
-            if (existingIndex >= 0) {
-                analyzedStocks[existingIndex] = newStockData;
-            } else {
-                analyzedStocks.push(newStockData);
-            }
-
-            localStorage.setItem('analyzedStocks', JSON.stringify(analyzedStocks));
-            renderTable();
-            alert(`「${name}」の解析に成功しました！\n・最新信用倍率: ${latestRatio}倍\n・スコア: ${score}点 (${signal})`);
-        }
-
-        renderTable();
-    </script>
-</body>
-</html>
+                    <label class="text-xs
