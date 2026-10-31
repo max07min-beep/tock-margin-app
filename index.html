@@ -14,7 +14,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">ペーストデータ自動解析 ＆ グラフ表示（安定版）</p>
+                <p class="text-sm text-slate-500 mt-1">エラー保護・デバッグ対応版</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
@@ -82,7 +82,6 @@
     </div>
 
     <script>
-        // データ読み込み時のエラー防止（もし古いデータで壊れていたら空にする）
         let analyzedStocks = [];
         try {
             analyzedStocks = JSON.parse(localStorage.getItem('analyzedStocks')) || [];
@@ -99,24 +98,15 @@
         }
 
         function renderTable() {
-            const tbody = document.getElementById('stock-table-body');
-            tbody.innerHTML = '';
-            
-            if (!Array.isArray(analyzedStocks) || analyzedStocks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
-                return;
-            }
-
-            analyzedStocks.forEach((stock, index) => {
-                const row = document.createElement('tr');
-                row.className = "hover:bg-slate-50/50 transition cursor-pointer";
-                row.onclick = () => drawChart(stock);
+            try {
+                const tbody = document.getElementById('stock-table-body');
+                tbody.innerHTML = '';
                 
-                let signalBadge = stock.signal === "ロング推奨" 
-                    ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
-                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
+                if (!Array.isArray(analyzedStocks) || analyzedStocks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
+                    return;
+                }
 
-                row.innerHTML = `
-                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code || ''}</td>
-                    <td class="p-4 font-bold text-slate-900">${stock.name || ''}</td>
-                    <td class="p-4 font-mono font-bold text
+                analyzedStocks.forEach((stock, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate
