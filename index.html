@@ -11,7 +11,7 @@
         <header class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">解析＆テーブル表示版</p>
+                <p class="text-sm text-slate-500 mt-1">安全・確実版</p>
             </div>
             <span id="update-date" class="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
         </header>
@@ -23,23 +23,23 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">銘柄コード</label>
-                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
+                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300">
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">銘柄名</label>
-                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
+                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300">
                 </div>
             </div>
 
             <div class="mb-4">
                 <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-bold text-slate-600">表データの貼り付け</label>
-                    <button onclick="insertTestData()" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
+                    <button id="test-btn" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
                 </div>
-                <textarea id="paste-area" rows="5" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none border-slate-300 focus:border-blue-500"></textarea>
+                <textarea id="paste-area" rows="5" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none border-slate-300"></textarea>
             </div>
 
-            <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm">
+            <button id="analyze-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm">
                 データを解析して反映する
             </button>
         </section>
@@ -52,4 +52,43 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                            <th class="p-4">コード</th>
+                            <th class="p-4">銘柄名</th>
+                            <th class="p-4">最新信用倍率</th>
+                            <th class="p-4">買残トレンド</th>
+                            <th class="p-4">スコア</th>
+                            <th class="p-4">判定シグナル</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var analyzedStocks = [];
+            try {
+                var saved = localStorage.getItem('analyzedStocks');
+                if (saved) analyzedStocks = JSON.parse(saved);
+            } catch (e) {
+                analyzedStocks = [];
+            }
+
+            function renderTable() {
+                var tbody = document.getElementById('stock-table-body');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                if (analyzedStocks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
+                    return;
+                }
+
+                analyzedStocks.forEach(function(stock) {
+                    var row = document.createElement('tr');
+                    row.className = "hover:bg-
