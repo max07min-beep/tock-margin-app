@@ -8,60 +8,48 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <header class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-            <p class="text-sm text-slate-500 mt-1">シンプル動作確認版</p>
+        <header class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
+                <p class="text-sm text-slate-500 mt-1">解析＆テーブル表示版</p>
+            </div>
+            <span id="update-date" class="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
         </header>
 
+        <!-- 入力エリア -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
             <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
             
-            <div class="mb-4">
-                <button onclick="insertTestData()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-bold hover:bg-blue-200">
-                    👉 テストデータを自動入力する
-                </button>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">銘柄コード</label>
+                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">銘柄名</label>
+                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
+                </div>
             </div>
 
             <div class="mb-4">
-                <textarea id="paste-area" rows="5" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono"></textarea>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs font-bold text-slate-600">表データの貼り付け</label>
+                    <button onclick="insertTestData()" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
+                </div>
+                <textarea id="paste-area" rows="5" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none border-slate-300 focus:border-blue-500"></textarea>
             </div>
 
             <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm">
-                データを解析する
+                データを解析して反映する
             </button>
         </section>
 
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">📋 分析結果</h2>
-            <div id="result-area" class="text-sm text-slate-600">まだデータはありません。</div>
-        </section>
-    </div>
-
-    <script>
-        // テストデータ入力関数
-        function insertTestData() {
-            const sample = "2026/10/232,154,400\n12,023,300\n-10,300\n-1,825,800\n5.58\n2026/10/162,164,700\n13,849,100\n515,500\n-4,494,500\n6.40";
-            document.getElementById('paste-area').value = sample;
-            alert('テストデータが入力されました！');
-        }
-
-        // 解析関数
-        function parseAndAnalyze() {
-            const text = document.getElementById('paste-area').value.trim();
-            if (!text) {
-                alert('データがありません。');
-                return;
-            }
-            
-            // 簡単な確認用アラート
-            alert('解析ボタンが正常に動作しました！データ行数: ' + text.split('\n').length);
-            
-            document.getElementById('result-area').innerHTML = `
-                <div class="p-4 bg-emerald-50 text-emerald-800 rounded-lg font-bold">
-                    ✅ データの受け渡しに成功しました！
-                </div>
-            `;
-        }
-    </script>
-</body>
-</html>
+        <!-- 一覧テーブル -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800">📋 監視銘柄 分析サマリー</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase
