@@ -1,0 +1,36 @@
+name: Auto-Update Stock Margin Data
+
+on:
+  schedule:
+    # 毎週火曜日の夕方 17:00 JST (08:00 UTC) に自動実行
+    - cron: '0 8 * * 2'
+  workflow_dispatch: # 手動でも動かせるようにする設定
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install beautifulsoup4 requests
+
+      - name: Run scraping script
+        run: python update_margin.py
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "Auto-update margin data via GitHub Actions" || echo "No changes to commit"
+          git push
