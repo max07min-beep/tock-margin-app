@@ -2,21 +2,119 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>動作テスト用</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信用需給分析ダッシュボード</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body style="padding: 40px; font-family: sans-serif;">
-    <h1>🧪 ボタン動作テスト</h1>
-    <p>下のボタンを押して、アラートが出るか確認してください。</p>
-    
-    <button id="test-btn" style="padding: 15px 30px; font-size: 18px; background: blue; color: white; cursor: pointer;">
-        ここを押してください
-    </button>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
+                <p class="text-sm text-slate-500 mt-1">基本機能・安定版</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-right">
+                <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">準備完了</span>
+            </div>
+        </header>
+
+        <!-- 入力エリア -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">銘柄コード</label>
+                    <input type="text" id="target-code" value="7203" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">銘柄名</label>
+                    <input type="text" id="target-name" value="トヨタ自動車" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none border-slate-300 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs font-bold text-slate-600">表データの貼り付け</label>
+                    <button id="test-data-btn" class="text-xs text-blue-600 hover:underline font-bold">👉 テストデータを自動入力する</button>
+                </div>
+                <textarea id="paste-area" rows="5" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono outline-none border-slate-300 focus:border-blue-500"></textarea>
+            </div>
+
+            <button id="analyze-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
+                データを解析する
+            </button>
+        </section>
+
+        <!-- 一覧テーブル -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800">📋 監視銘柄 分析サマリー</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                            <th class="p-4">コード</th>
+                            <th class="p-4">銘柄名</th>
+                            <th class="p-4">最新信用倍率</th>
+                            <th class="p-4">買残トレンド</th>
+                            <th class="p-4">スコア</th>
+                            <th class="p-4">判定シグナル</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
 
     <script>
-        // ボタンに直接イベントをリスナーとして登録する（HTML側でのonclick依存を排除）
-        document.getElementById('test-btn').addEventListener('click', function() {
-            alert('🎉 ボタンは正常に機能しています！');
-        });
-    </script>
-</body>
-</html>
+        // データの初期化
+        let analyzedStocks = [];
+        try {
+            const saved = localStorage.getItem('analyzedStocks');
+            if (saved) analyzedStocks = JSON.parse(saved);
+        } catch (e) {
+            analyzedStocks = [];
+        }
+
+        // テーブル描画関数
+        function renderTable() {
+            const tbody = document.getElementById('stock-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (analyzedStocks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
+                return;
+            }
+
+            analyzedStocks.forEach((stock) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50/50 transition";
+                
+                let signalBadge = stock.signal === "ロング推奨" 
+                    ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
+                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
+
+                row.innerHTML = `
+                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code}</td>
+                    <td class="p-4 font-bold text-slate-900">${stock.name}</td>
+                    <td class="p-4 font-mono font-bold text-blue-600">${stock.marginRatio} 倍</td>
+                    <td class="p-4 text-xs text-slate-600">${stock.trend}</td>
+                    <td class="p-4 font-bold font-mono">${stock.score} 点</td>
+                    <td class="p-4">${signalBadge}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('update-date').innerText = "最終更新: " + new Date().toLocaleDateString();
+        }
+
+        // テストデータ入力ボタンのイベント
+        document.getElementById('test-data-btn').addEventListener('click', function() {
+            const sample = `2026/10/232,154,400\n12,023,300\n-10,300\n-1,8
