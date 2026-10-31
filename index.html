@@ -13,7 +13,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">Yahoo!等のデータをペーストして、トレンド・シコリの掃除度合いを自動解析</p>
+                <p class="text-sm text-slate-500 mt-1">縦にバラバラにペーストされる表データも自動でグループ化して解析します</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
@@ -23,7 +23,7 @@
         <!-- データペースト入力エリア -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
             <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
-            <p class="text-xs text-slate-500 mb-4">対象銘柄のコード（例: 7203）を入力し、Yahoo!ファイナンス等の履歴表をそのまま下の枠に貼り付けて「解析する」を押してください。</p>
+            <p class="text-xs text-slate-500 mb-4">銘柄コードと名前を入力し、Yahoo!ファイナンス等の履歴表（縦長になってもOK）をそのまま下にペーストして「解析する」を押してください。</p>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
@@ -37,8 +37,8 @@
             </div>
 
             <div class="mb-4">
-                <label class="block text-xs font-bold text-slate-600 mb-1">表データの貼り付け（コピーしたテーブルをそのままここにペースト）</label>
-                <textarea id="paste-area" rows="5" placeholder="例: 2026/10/23  2,154,400  12,023,300  ...  5.58" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                <label class="block text-xs font-bold text-slate-600 mb-1">表データの貼り付け</label>
+                <textarea id="paste-area" rows="6" placeholder="ここにそのままペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
             </div>
 
             <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
@@ -57,11 +57,3 @@
                         <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
                             <th class="p-4">コード</th>
                             <th class="p-4">銘柄名</th>
-                            <th class="p-4">最新信用倍率</th>
-                            <th class="p-4">買残トレンド（直近の変化）</th>
-                            <th class="p-4">スコア</th>
-                            <th class="p-4">判定シグナル</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
-                        <!-- 動的に挿入されます -->
