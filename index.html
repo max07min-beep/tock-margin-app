@@ -84,4 +84,88 @@
                 
                 let signalBadge = stock.signal === "ロング推奨" 
                     ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
-                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">
+                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
+
+                row.innerHTML = `
+                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code}</td>
+                    <td class="p-4 font-bold text-slate-900">${stock.name}</td>
+                    <td class="p-4 font-mono font-bold text-blue-600">${stock.marginRatio} 倍</td>
+                    <td class="p-4 text-xs text-slate-600">${stock.trend}</td>
+                    <td class="p-4 font-bold font-mono">${stock.score} 点</td>
+                    <td class="p-4">${signalBadge}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('update-date').innerText = "最終更新: " + new Date().toLocaleDateString();
+        }
+
+        function parseAndAnalyze() {
+            const code = document.getElementById('target-code').value.trim();
+            const name = document.getElementById('target-name').value.trim();
+            const rawText = document.getElementById('paste-area').value.trim();
+
+            if (!rawText) {
+                alert("データを貼り付けてください。");
+                return;
+            }
+
+            // テキスト全体からすべての「日付（YYYY/M/D または YYYY/MM/DD）」を順番に抽出
+            const dateRegex = /\d{4}\/\d{1,2}\/\d{1,2}/g;
+            const dates = rawText.match(dateRegex);
+
+            if (!dates || dates.length === 0) {
+                alert("有効な日付が見つかりませんでした。データ形式を確認してください。");
+                return;
+            }
+
+            // 日付文字列をすべてスペースに置換して、残った数値を純粋に抽出
+            let textWithoutDates = rawText;
+            dates.forEach(d => {
+                textWithoutDates = textWithoutDates.replace(d, ' ');
+            });
+
+            // カンマ区切りの数値やマイナス数値、小数点をすべて配列として取得
+            const allTokens = textWithoutDates.match(/[-+]?[\d,]+\.?\d*/g);
+            
+            if (!allTokens) {
+                alert("数値データの抽出に失敗しました。");
+                return;
+            }
+
+            const cleanNumbers = allTokens
+                .map(t => t.replace(/,/g, ''))
+                .filter(t => t !== '' && !isNaN(t))
+                .map(Number);
+
+            // 1レコードあたり5つの数値（売残, 買残, 売残増減, 買残増減, 信用倍率）があると仮定して組み立て
+            let records = [];
+            let numIdx = 0;
+
+            for (let i = 0; i < dates.length; i++) {
+                if (numIdx + 4 < cleanNumbers.length) {
+                    records.push({
+                        date: dates[i],
+                        sellMargin: cleanNumbers[numIdx],
+                        buyMargin: cleanNumbers[numIdx + 1],
+                        sellChange: cleanNumbers[numIdx + 2],
+                        buyChange: cleanNumbers[numIdx + 3],
+                        ratio: cleanNumbers[numIdx + 4]
+                    });
+                    numIdx += 5;
+                }
+            }
+
+            if (records.length === 0) {
+                alert("データを表として正しく構築できませんでした。");
+                return;
+            }
+
+            // 最新レコード（先頭）
+            const latest = records[0];
+            const latestRatio = latest.ratio;
+
+            // 買残トレンド計算（ピーク時との比較）
+            let trendText = "推移安定";
+            let maxBuy = 0;
+            records.forEach(r => { if (r.buyMargin > maxBuy
