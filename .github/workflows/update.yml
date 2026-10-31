@@ -2,9 +2,8 @@ name: Auto-Update Stock Margin Data
 
 on:
   schedule:
-    # 毎週火曜日の夕方 17:00 JST (08:00 UTC) に自動実行
     - cron: '0 8 * * 2'
-  workflow_dispatch: # 手動でも動かせるようにする設定
+  workflow_dispatch:
 
 jobs:
   update-data:
@@ -13,10 +12,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
