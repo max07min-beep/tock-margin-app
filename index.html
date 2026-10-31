@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>信用需給分析ダッシュボード</title>
-    <!-- Tailwind CSS for modern clean styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
@@ -13,7 +13,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">縦にバラバラにペーストされる表データも自動でグループ化して解析します</p>
+                <p class="text-sm text-slate-500 mt-1">Yahoo!ファイナンス等の履歴表をペーストして自動解析・スコアリング</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
@@ -23,7 +23,7 @@
         <!-- データペースト入力エリア -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
             <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
-            <p class="text-xs text-slate-500 mb-4">銘柄コードと名前を入力し、Yahoo!ファイナンス等の履歴表（縦長になってもOK）をそのまま下にペーストして「解析する」を押してください。</p>
+            <p class="text-xs text-slate-500 mb-4">対象銘柄のコードと名前を入力し、コピーした表データをそのまま下に貼り付けて「解析する」を押してください。</p>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
@@ -38,7 +38,7 @@
 
             <div class="mb-4">
                 <label class="block text-xs font-bold text-slate-600 mb-1">表データの貼り付け</label>
-                <textarea id="paste-area" rows="6" placeholder="ここにそのままペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                <textarea id="paste-area" rows="6" placeholder="ここに表データをペーストしてください" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
             </div>
 
             <button onclick="parseAndAnalyze()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm transition">
@@ -57,3 +57,67 @@
                         <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
                             <th class="p-4">コード</th>
                             <th class="p-4">銘柄名</th>
+                            <th class="p-4">最新信用倍率</th>
+                            <th class="p-4">買残トレンド（シコリの掃除具合）</th>
+                            <th class="p-4">スコア</th>
+                            <th class="p-4">判定シグナル</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
+                        <!-- 動的に挿入されます -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let analyzedStocks = JSON.parse(localStorage.getItem('analyzedStocks')) || [];
+
+        function renderTable() {
+            const tbody = document.getElementById('stock-table-body');
+            tbody.innerHTML = '';
+            
+            if (analyzedStocks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">データがありません。上のフォームからペーストして解析してください。</td></tr>';
+                return;
+            }
+
+            analyzedStocks.forEach(stock => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50/50 transition";
+                
+                let signalBadge = stock.signal === "ロング推奨" 
+                    ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
+                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
+
+                row.innerHTML = `
+                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code}</td>
+                    <td class="p-4 font-bold text-slate-900">${stock.name}</td>
+                    <td class="p-4 font-mono font-bold text-blue-600">${stock.marginRatio} 倍</td>
+                    <td class="p-4 text-xs text-slate-600">${stock.trend}</td>
+                    <td class="p-4 font-bold font-mono">${stock.score} 点</td>
+                    <td class="p-4">${signalBadge}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('update-date').innerText = "最終更新: " + new Date().toLocaleDateString();
+        }
+
+        function parseAndAnalyze() {
+            const code = document.getElementById('target-code').value.trim();
+            const name = document.getElementById('target-name').value.trim();
+            const rawText = document.getElementById('paste-area').value.trim();
+
+            if (!rawText) {
+                alert("データを貼り付けてください。");
+                return;
+            }
+
+            // 日付パターン（2026/10/23 や 2026/9/4 など）でテキストを分割・抽出
+            // 日付と直後の数字が繋がっている(2026/10/232,154,400)ケースも正規表現で一発分解
+            const dateRegex = /(\d{4}\/\d{1,2}\/\d{1,2})/g;
+            const dates = rawText.match(dateRegex);
+
+            if (!
