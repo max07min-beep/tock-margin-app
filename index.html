@@ -4,26 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>信用需給分析ダッシュボード</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <!-- ヘッダー -->
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📈 信用需給分析ダッシュボード</h1>
-                <p class="text-sm text-slate-500 mt-1">Yahoo!ファイナンス等の履歴表をペーストして自動解析・スコアリング</p>
+                <p class="text-sm text-slate-500 mt-1">Yahoo!ファイナンス等のペーストデータを確実パース・自動解析</p>
             </div>
             <div class="mt-4 md:mt-0 text-right">
                 <span id="update-date" class="inline-block bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">データ未読込</span>
             </div>
         </header>
 
-        <!-- データペースト入力エリア -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
             <h2 class="text-lg font-bold text-slate-800 mb-2">📋 信用残データペースト解析</h2>
-            <p class="text-xs text-slate-500 mb-4">対象銘柄のコードと名前を入力し、コピーした表データをそのまま下に貼り付けて「解析する」を押してください。</p>
+            <p class="text-xs text-slate-500 mb-4">対象銘柄を入力し、ペーストエリアにそのまま貼り付けて「解析する」を押してください。</p>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
@@ -46,7 +43,6 @@
             </button>
         </section>
 
-        <!-- 分析結果一覧テーブル -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-6 border-b border-slate-100">
                 <h2 class="text-lg font-bold text-slate-800">📊 監視銘柄 分析サマリー</h2>
@@ -58,13 +54,12 @@
                             <th class="p-4">コード</th>
                             <th class="p-4">銘柄名</th>
                             <th class="p-4">最新信用倍率</th>
-                            <th class="p-4">買残トレンド（シコリの掃除具合）</th>
+                            <th class="p-4">買残トレンド（シコリ掃除状況）</th>
                             <th class="p-4">スコア</th>
                             <th class="p-4">判定シグナル</th>
                         </tr>
                     </thead>
                     <tbody id="stock-table-body" class="divide-y divide-slate-100 text-sm">
-                        <!-- 動的に挿入されます -->
                     </tbody>
                 </table>
             </div>
@@ -89,35 +84,4 @@
                 
                 let signalBadge = stock.signal === "ロング推奨" 
                     ? '<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">ロング推奨</span>'
-                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">下落警戒・様子見</span>';
-
-                row.innerHTML = `
-                    <td class="p-4 font-mono font-bold text-slate-700">${stock.code}</td>
-                    <td class="p-4 font-bold text-slate-900">${stock.name}</td>
-                    <td class="p-4 font-mono font-bold text-blue-600">${stock.marginRatio} 倍</td>
-                    <td class="p-4 text-xs text-slate-600">${stock.trend}</td>
-                    <td class="p-4 font-bold font-mono">${stock.score} 点</td>
-                    <td class="p-4">${signalBadge}</td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            document.getElementById('update-date').innerText = "最終更新: " + new Date().toLocaleDateString();
-        }
-
-        function parseAndAnalyze() {
-            const code = document.getElementById('target-code').value.trim();
-            const name = document.getElementById('target-name').value.trim();
-            const rawText = document.getElementById('paste-area').value.trim();
-
-            if (!rawText) {
-                alert("データを貼り付けてください。");
-                return;
-            }
-
-            // 日付パターン（2026/10/23 や 2026/9/4 など）でテキストを分割・抽出
-            // 日付と直後の数字が繋がっている(2026/10/232,154,400)ケースも正規表現で一発分解
-            const dateRegex = /(\d{4}\/\d{1,2}\/\d{1,2})/g;
-            const dates = rawText.match(dateRegex);
-
-            if (!
+                    : '<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">
